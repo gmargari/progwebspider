@@ -5,5 +5,5 @@ Run
 ---
 ```
 pip install scrapy
-scrapy runspider progwebspider.py  # --nolog
+scrapy crawl ProgrammableWeb
 ```
