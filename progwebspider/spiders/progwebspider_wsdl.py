@@ -8,6 +8,7 @@ import sys
 import re
 from xgoogle.search import GoogleSearch, SearchError
 import time
+from collections import defaultdict
 
 clean_html_tags_regex = re.compile('<.*?>')
 
@@ -25,7 +26,9 @@ class ProgrammableWebSpider(scrapy.Spider):
 
     # scrapy parameter: seconds between successive page crawls
     download_delay = 2
-    per_website_depth_limit = 4
+    domain_depth_limit = 4
+    domain_max_visits = 10
+    domain_visits = defaultdict(lambda: 0)
 
 #    rules = (Rule(LinkExtractor(), callback='parse_website_for_wsdl', follow=True),)
 #    rules = (Rule(LinkExtractor(), callback='parse_obj', follow=True),)
@@ -45,9 +48,6 @@ class ProgrammableWebSpider(scrapy.Spider):
         # Parse current directory page
         for tr in response.xpath("//tr[(@class='odd' or @class='even')]"):
             url = tr.xpath("td[1]/a/@href").extract()[0]
-            #title tr.xpath("td[1]/a/@title").extract()[0],
-            #short_description = tr.xpath("td[2]/text()").extract()[0].strip(),
-            #category = tr.xpath("td[3]/a/text()").extract()[0],
             fullurl = response.urljoin(url)
             yield scrapy.Request(fullurl, self.parse_api_page)
 
@@ -61,30 +61,16 @@ class ProgrammableWebSpider(scrapy.Spider):
     # parse_api_page ()
     #===========================================================================
     def parse_api_page(self, response):
-        d = dict()
         for div in response.xpath("//div[@id='tabs-content']/div[2]/div[@class='field']"):
             key = str(div.xpath("label/text()").extract()[0])
             try:
                 value = str(div.xpath("span/a/text()").extract()[0])
             except:
                 value = str(div.xpath("span/text()").extract()[0])
-            d[key] = value
             if (key == "API Provider"):
-                domain = urlparse(d[key]).hostname
-                print "-- ", domain
-
-                # Ask google for urls of the above domain that contain the word "wsdl"
-                client = "firefox"
-                language = "en"
-                google_url = "http://www.google.gr/search?" + \
-                    "&client=" + client + \
-                    "&hl=" + language + \
-                    "&q=site:" + domain + "+inurl:wsdl" + \
-                    "&filter=0"
                 time.sleep(4)
-                yield scrapy.Request(google_url, self.parse_google_results_for_wsdl)
-                #yield scrapy.Request(d[key], self.parse_website_for_wsdl)
-        #print json.dumps(d, sort_keys=True)
+                #yield scrapy.Request(self.google_url(value), self.parse_google_results_for_wsdl)
+                yield scrapy.Request(value, self.parse_website_for_wsdl)
 
     #===========================================================================
     # parse_google_results_for_wsdl ()
@@ -115,26 +101,18 @@ class ProgrammableWebSpider(scrapy.Spider):
     # parse_website_for_wsdl ()
     #===========================================================================
     def parse_website_for_wsdl(self, response):
-        print response.meta['depth'], "PARSE:", response.url
 
-        for link in response.xpath("//div[@class='g']/h3[@class='r']/a/@href").extract():
-            google_link = "https://www.google.com/" + link
-            req = urllib2.Request(google_link)
-            res = urllib2.urlopen(req)
-            finalurl = res.geturl()
-            url = re.sub(clean_html_tags_regex, '', finalurl)
-            match = re.match(r'(?i).*\?wsdl$', url)
-            if (match):
-                print " ***", url
-            else:
-                print "    ", url
-
-
-        return
-
-
-        print response.meta['depth'], "PARSE:", response.url
         domain = urlparse(response.url).hostname
+        self.domain_visits[domain] += 1
+
+        # If we reached either the depth limit or the max number of visits for this domain, return
+        # (-2: each domain starts with depth 2 because its url has been extracted from parse() and parse_api_directory_page()
+        if (response.meta['depth'] - 2 >= self.domain_depth_limit or
+            self.domain_visits[domain] >= self.domain_max_visits):
+            return
+
+        print response.meta['depth'], self.domain_visits[domain], "parse_website_for_wsdl(", response.url, ")"
+
         allowed_domains = [ "https://" + domain, "http://" + domain ]
         for link in LinkExtractor(allow=(allowed_domains)).extract_links(response):
             url = link.url
@@ -148,22 +126,40 @@ class ProgrammableWebSpider(scrapy.Spider):
             match = re.match(r'(?i).*\?wsdl$', url)
             if (match):
                 print " ***", url
-            #else:
-            #    print "    ", url
+            else:
+                print "    ", url
 
-            # Recursively parse that page (2: each web site has at least depth 2 because
-            # the url has been extracted from parse() and parse_api_directory_page()
-            if (response.meta['depth'] < 2 + self.per_website_depth_limit):
-                # Avoid parsing the same url with different schema: parse only 'http://' urls
-                # so that scrapy automatically detects duplicate urls
-                yield scrapy.Request(url.replace("https://", "http://"), self.parse_website_for_wsdl)
+            # Avoid parsing the same url with different schema: parse only 'http://' urls so that scrapy automatically detects duplicate urls
+            url = url.replace("https://", "http://")
+            # Recursively parse that page
+            yield scrapy.Request(url, self.parse_website_for_wsdl)
+
+    #===========================================================================
+    # google_url ()
+    #===========================================================================
+    def google_url(self, url):
+        domain = urlparse(url).hostname
+        print "-- ", domain
+
+        # Ask google for urls of the above domain that contain the word "wsdl"
+        client = "firefox"
+        language = "en"
+        url = "http://www.google.gr/search?" + \
+            "client=" + client + \
+            "&hl=" + language + \
+            "&q=site:" + domain + "+inurl:wsdl" + \
+            "&filter=0"
+        return url
 
     #===========================================================================
     # get_next_url ()
     #===========================================================================
     def get_next_url(self, url):
+        if (url.find("#") != -1):
+            params = dict(map(lambda x: x.split("="), url.split("#")[1].split("&")))
+        else:
+            params = dict(map(lambda x: x.split("="), url.split("?")[1].split("&")))
         #if no "&start=" part in url, append "start=10". Else, replace "start=x" with "start=x+10"
-        params = dict(map(lambda x: x.split("="), url.split("#")[1].split("&")))
         if ('start' in params and int(params['start']) < 20):
             return url.replace('&start=' + params['start'], '&start=' + str(int(params['start']) + 10))
         else:
