@@ -68,34 +68,7 @@ class ProgrammableWebSpider(scrapy.Spider):
             except:
                 value = str(div.xpath("span/text()").extract()[0])
             if (key == "API Provider"):
-                time.sleep(4)
-                #yield scrapy.Request(self.google_url(value), self.parse_google_results_for_wsdl)
                 yield scrapy.Request(value, self.parse_website_for_wsdl)
-
-    #===========================================================================
-    # parse_google_results_for_wsdl ()
-    #===========================================================================
-    def parse_google_results_for_wsdl(self, response):
-        print response.meta['depth'], "PARSE:", response.url
-
-        for link in response.xpath("//div[@class='g']/h3[@class='r']/a/@href").extract():
-            google_link = "https://www.google.com/" + link
-            # From google results' link to actual link after google redirection
-            req = urllib2.Request(google_link)
-            res = urllib2.urlopen(req)
-            finalurl = res.geturl()
-            # If url ends in "?wsdl"
-            url = re.sub(clean_html_tags_regex, '', finalurl)
-            match = re.match(r'(?i).*\?wsdl$', url)
-            if (match):
-                print " ***", url
-            else:
-                print "    ", url
-
-        # Recursive call this function for the next page of results
-        print "CUR:  ", response.url
-        print "NEXT: ", self.get_next_url(response.url)
-        #yield scrapy.Request(self.get_next_url(response.url), self.parse_google_results_for_wsdl)
 
     #===========================================================================
     # parse_website_for_wsdl ()
@@ -133,34 +106,3 @@ class ProgrammableWebSpider(scrapy.Spider):
             url = url.replace("https://", "http://")
             # Recursively parse that page
             yield scrapy.Request(url, self.parse_website_for_wsdl)
-
-    #===========================================================================
-    # google_url ()
-    #===========================================================================
-    def google_url(self, url):
-        domain = urlparse(url).hostname
-        print "-- ", domain
-
-        # Ask google for urls of the above domain that contain the word "wsdl"
-        client = "firefox"
-        language = "en"
-        url = "http://www.google.gr/search?" + \
-            "client=" + client + \
-            "&hl=" + language + \
-            "&q=site:" + domain + "+inurl:wsdl" + \
-            "&filter=0"
-        return url
-
-    #===========================================================================
-    # get_next_url ()
-    #===========================================================================
-    def get_next_url(self, url):
-        if (url.find("#") != -1):
-            params = dict(map(lambda x: x.split("="), url.split("#")[1].split("&")))
-        else:
-            params = dict(map(lambda x: x.split("="), url.split("?")[1].split("&")))
-        #if no "&start=" part in url, append "start=10". Else, replace "start=x" with "start=x+10"
-        if ('start' in params and int(params['start']) < 20):
-            return url.replace('&start=' + params['start'], '&start=' + str(int(params['start']) + 10))
-        else:
-            return url + "&start=10"
