@@ -71,28 +71,28 @@ class ProgrammableWebSpider(scrapy.Spider):
     # parse ()
     #===========================================================================
     def parse(self, response):
-        yield scrapy.Request(response.url, self.parse_api_directory_page)
+        yield scrapy.Request(response.url, self.parse_pw_directory_page)
 
     #===========================================================================
-    # parse_api_directory_page ()
+    # parse_pw_directory_page ()
     #===========================================================================
-    def parse_api_directory_page(self, response):
+    def parse_pw_directory_page(self, response):
         # Parse current directory page
         for tr in response.xpath("//tr[(@class='odd' or @class='even')]"):
             url = tr.xpath("td[1]/a/@href").extract()[0]
             fullurl = response.urljoin(url).replace("https://", "http://")
-            yield scrapy.Request(fullurl, self.parse_api_page)
+            yield scrapy.Request(fullurl, self.parse_pw_api_page)
 
         # If there is a "next page" url, recursive call this function for it
         next_page = response.xpath("//a[@class='pw_load_more']/@href")
         if next_page:
             fullurl = response.urljoin(next_page[0].extract())
-            yield scrapy.Request(fullurl, self.parse_api_directory_page)
+            scrapy.Request(fullurl, self.parse_pw_directory_page)
 
     #===========================================================================
-    # parse_api_page ()
+    # parse_pw_api_page ()
     #===========================================================================
-    def parse_api_page(self, response):
+    def parse_pw_api_page(self, response):
         d = dict()
         for div in response.xpath("//div[@id='tabs-content']/div[2]/div[@class='field']"):
             key = str(div.xpath("label/text()").extract()[0])
@@ -106,6 +106,7 @@ class ProgrammableWebSpider(scrapy.Spider):
             if (key in d.keys()):
                 self.add_url_to_queue(d[key])
                 yield scrapy.Request(d[key], self.parse_website_for_wsdl)
+                break
 
     #===========================================================================
     # parse_website_for_wsdl ()
