@@ -9,45 +9,6 @@ import re
 from xgoogle.search import GoogleSearch, SearchError
 import time
 from collections import defaultdict
-import heapq
-
-#===============================================================================
-# PrioritySet
-#===============================================================================
-class PrioritySet(object):
-
-    #===========================================================================
-    # __init__ ()
-    #===========================================================================
-    def __init__(self):
-        self.myheap = []
-        self.myset = set()
-
-    #===========================================================================
-    # add ()
-    #===========================================================================
-    def add(self, pri, obj):
-        if (not obj in self.myset):
-            self.myset.add(obj)
-            heapq.heappush(self.myheap, (pri, obj))
-            print "==> Enqueue    ", pri, obj
-        else:
-            print "==> Duplicate    ", obj
-
-    #===========================================================================
-    # pop ()
-    #===========================================================================
-    def pop(self):
-        pri, obj = heapq.heappop(self.myheap)
-        #self.myset.remove(obj)  # Do not remove from set, so that we won't reinsert objects that were previously popped
-        print "==> Pop        ", pri, obj
-        return pri, obj
-
-    #===========================================================================
-    # empty ()
-    #===========================================================================
-    def empty(self):
-        return (len(self.myheap) == 0)
 
 #===============================================================================
 # ProgrammableWebSpider
@@ -65,13 +26,12 @@ class ProgrammableWebSpider(scrapy.Spider):
     download_delay = 2
     domain_max_visits = 100
     domain_visits = defaultdict(lambda: 0)
-    links_queue = PrioritySet()
 
     #===========================================================================
     # parse ()
     #===========================================================================
     def parse(self, response):
-        yield scrapy.Request(response.url, self.parse_pw_directory_page)
+        yield self.request_with_priority(response.url, self.parse_pw_api_page, 40)
 
     #===========================================================================
     # parse_pw_directory_page ()
@@ -81,32 +41,31 @@ class ProgrammableWebSpider(scrapy.Spider):
         for tr in response.xpath("//tr[(@class='odd' or @class='even')]"):
             url = tr.xpath("td[1]/a/@href").extract()[0]
             fullurl = response.urljoin(url).replace("https://", "http://")
-            yield scrapy.Request(fullurl, self.parse_pw_api_page)
+            yield self.request_with_priority(fullurl, self.parse_pw_api_page, 30)
 
         # If there is a "next page" url, recursive call this function for it
         next_page = response.xpath("//a[@class='pw_load_more']/@href")
         if next_page:
             fullurl = response.urljoin(next_page[0].extract())
-            scrapy.Request(fullurl, self.parse_pw_directory_page)
+            yield self.request_with_priority(value, self.parse_pw_directory_page, 40)
 
     #===========================================================================
     # parse_pw_api_page ()
     #===========================================================================
     def parse_pw_api_page(self, response):
-        d = dict()
         for div in response.xpath("//div[@id='tabs-content']/div[2]/div[@class='field']"):
             key = str(div.xpath("label/text()").extract()[0])
             try:
                 value = str(div.xpath("span/a/text()").extract()[0])
             except:
                 value = str(div.xpath("span/text()").extract()[0])
-            d[key] = value
 
-        for key in "API Endpoint", "API Homepage", "API Provider":
-            if (key in d.keys()):
-                self.add_url_to_queue(d[key])
-                yield scrapy.Request(d[key], self.parse_website_for_wsdl)
-                break
+            if ("API Endpoint" in key):
+                yield self.request_with_priority(value, self.parse_website_for_wsdl, 20)
+            elif ("API Homepage" in key):
+                yield self.request_with_priority(value, self.parse_website_for_wsdl, 18)
+            elif ("API Provider" in key):
+                yield self.request_with_priority(value, self.parse_website_for_wsdl, 16)
 
     #===========================================================================
     # parse_website_for_wsdl ()
@@ -134,40 +93,23 @@ class ProgrammableWebSpider(scrapy.Spider):
         page_links = LinkExtractor(allow=(allowed_domains)).extract_links(response)
 
         for link in page_links:
-            self.add_url_to_queue(link.url)
-
-        # Recursively parse the first few pages from queue
-        for i in range(0, 3):
-            url = self.get_url_from_queue()
-            if (url):
-                yield scrapy.Request(url, self.parse_website_for_wsdl)
-
-    #===========================================================================
-    # add_url_to_queue ()
-    #===========================================================================
-    def add_url_to_queue(self, url):
-        queue = self.links_queue
-
-        # Avoid parsing the same url with different schema: parse only 'http://' urls so that scrapy automatically detects duplicate urls
-        url = url.replace("https://", "http://")
-        url_lower_case = url.lower()
-        if ("wsdl" in url_lower_case or "soap" in url_lower_case):
-            queue.add(1, url)
-        elif ("webservice" in url_lower_case):
-            queue.add(2, url)
-        elif ("api" in url_lower_case or "rest" in url_lower_case):
-            queue.add(3, url)
-        else:
-            queue.add(5, url)
+            # Avoid parsing the same url with different schema: parse only 'http://' urls so that scrapy automatically detects duplicate urls
+            url = link.url.replace("https://", "http://")
+            url_lower_case = url.lower()
+            if ("wsdl" in url_lower_case or "soap" in url_lower_case):
+                yield self.request_with_priority(url, self.parse_website_for_wsdl, 10)
+            elif ("webservice" in url_lower_case):
+                yield self.request_with_priority(url, self.parse_website_for_wsdl, 8)
+            elif ("api" in url_lower_case or "rest" in url_lower_case):
+                yield self.request_with_priority(url, self.parse_website_for_wsdl, 6)
+            else:
+                yield self.request_with_priority(url, self.parse_website_for_wsdl, 4)
 
     #===========================================================================
-    # get_url_from_queue ()
+    # request_with_priority ()
     #===========================================================================
-    def get_url_from_queue(self):
-        queue = self.links_queue
-        if (not queue.empty()):
-            priority, url = queue.pop()
-            return url
+    def request_with_priority(self, req_url, req_callback, req_priority):
+        return scrapy.Request(req_url, callback = req_callback, priority = req_priority)
 
     #===========================================================================
     # response_is_wsdl ()
