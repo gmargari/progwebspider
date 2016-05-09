@@ -9,6 +9,7 @@ import re
 from xgoogle.search import GoogleSearch, SearchError
 import time
 from collections import defaultdict
+import tldextract
 
 #===============================================================================
 # ProgrammableWebSpider
@@ -92,8 +93,7 @@ class ProgrammableWebSpider(scrapy.Spider):
     # parse_website_for_wsdl ()
     #===========================================================================
     def parse_website_for_wsdl(self, response):
-
-        domain = urlparse(response.url).hostname
+        domain = tldextract.extract(response.url).domain
         self.domain_visits[domain] += 1
         print response.meta['depth'], self.domain_visits[domain], "PARSE  ", response.url
 

@@ -5,6 +5,7 @@ Run
 ---
 ```
 pip install scrapy
+pip install tldextract
 # From project's top level directory:
 scrapy crawl ProgrammableWeb
 ```
