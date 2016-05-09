@@ -42,7 +42,6 @@ class ProgrammableWebSpider(scrapy.Spider):
         for div in response.xpath('//div[@class="view-empty"]/text()'):
             text = div.extract()
             if (text.find("Sorry, your search did not give any results")):
-                logging.info("REACHED END OF RESULTS" + response.url)
                 return
 
         # Parse current directory page
@@ -120,7 +119,7 @@ class ProgrammableWebSpider(scrapy.Spider):
             url_lower_case = url.lower()
             if ("wsdl" in url_lower_case or "soap" in url_lower_case):
                 yield self.request_with_priority(url, self.parse_website_for_wsdl, 10)
-            elif ("webservice" in url_lower_case):
+            elif ("webservice" in url_lower_case or "web_service" in url_lower_case or "web-service" in url_lower_case):
                 yield self.request_with_priority(url, self.parse_website_for_wsdl, 8)
             elif ("api" in url_lower_case or "rest" in url_lower_case):
                 yield self.request_with_priority(url, self.parse_website_for_wsdl, 6)
