@@ -16,10 +16,11 @@ from collections import defaultdict
 class ProgrammableWebSpider(scrapy.Spider):
     name = 'ProgrammableWebWSDL'
     start_urls = [
+        # NOTE: Don't forget to append "&page=0" to the url of the directory page
         # Directory of WSDL apis
-        #'http://www.programmableweb.com/category/all/apis?data_format=21183',
+        #'http://www.programmableweb.com/category/all/apis?data_format=21183&page=0',
         # Directory of SOAP apis
-        'http://www.programmableweb.com/category/all/apis?data_format=21176',
+        'http://www.programmableweb.com/category/all/apis?data_format=21176&page=0',
     ]
 
     # scrapy parameter: seconds between successive page crawls
@@ -37,17 +38,38 @@ class ProgrammableWebSpider(scrapy.Spider):
     # parse_pw_directory_page ()
     #===========================================================================
     def parse_pw_directory_page(self, response):
+        # If we reached the last page of results
+        for div in response.xpath('//div[@class="view-empty"]/text()'):
+            text = div.extract()
+            if (text.find("Sorry, your search did not give any results")):
+                logging.info("REACHED END OF RESULTS" + response.url)
+                return
+
         # Parse current directory page
         for tr in response.xpath("//tr[(@class='odd' or @class='even')]"):
             url = tr.xpath("td[1]/a/@href").extract()[0]
             fullurl = response.urljoin(url).replace("https://", "http://")
             yield self.request_with_priority(fullurl, self.parse_pw_api_page, 30)
 
-        # If there is a "next page" url, recursive call this function for it
-        next_page = response.xpath("//a[@class='pw_load_more']/@href")
-        if next_page:
-            fullurl = response.urljoin(next_page[0].extract())
-            yield self.request_with_priority(value, self.parse_pw_directory_page, 40)
+        # Recursive call this function for next page
+        next_page = self.get_next_page_url(response.url)
+        yield self.request_with_priority(next_page, self.parse_pw_directory_page, 40)
+
+    #===========================================================================
+    # get_next_page_url ()
+    #===========================================================================
+    def get_next_page_url(self, url):
+        needle = "page="
+        num_start = url.rfind(needle) + len(needle)
+        num_end = url.rfind("&", num_start)
+        if (num_end == -1):
+            num_end = len(url) - 1
+        else:
+            num_end = num_end - 1
+        num = int(url[num_start:num_end+1])
+        next_num = num + 1
+        next_url = url[:num_start] + str(next_num) + url[num_end+1:]
+        return next_url
 
     #===========================================================================
     # parse_pw_api_page ()
