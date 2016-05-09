@@ -8,6 +8,7 @@ import sys
 import re
 from xgoogle.search import GoogleSearch, SearchError
 import time
+import logging
 from collections import defaultdict
 import tldextract
 
@@ -95,19 +96,17 @@ class ProgrammableWebSpider(scrapy.Spider):
     def parse_website_for_wsdl(self, response):
         domain = tldextract.extract(response.url).domain
         self.domain_visits[domain] += 1
-        print response.meta['depth'], self.domain_visits[domain], "PARSE  ", response.url
+        logging.info("==  PARSE_WSDL " + str(response.meta['depth']) + " " + str(self.domain_visits[domain]) + " " + response.url)
 
         if (self.response_is_wsdl(response)):
-            print "WSDL_URL", response.url
+            logging.info("WSDL_URL " + response.url)
             return
 
         if (not self.response_is_html(response)):
-            print "NOT_HTML"
             return
 
         # If we reached the max number of visits for this domain, return
         if (self.domain_visits[domain] >= self.domain_max_visits):
-            print "RETURN"
             return
 
         allowed_domains = [ "https://" + domain, "http://" + domain ]
