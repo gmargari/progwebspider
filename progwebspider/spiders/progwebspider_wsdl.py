@@ -32,7 +32,7 @@ class ProgrammableWebSpider(scrapy.Spider):
     # parse ()
     #===========================================================================
     def parse(self, response):
-        yield self.request_with_priority(response.url, self.parse_pw_api_page, 40)
+        yield self.request_with_priority(response.url, self.parse_pw_directory_page, 40)
 
     #===========================================================================
     # parse_pw_directory_page ()
