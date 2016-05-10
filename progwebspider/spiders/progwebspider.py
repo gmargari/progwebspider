@@ -147,6 +147,4 @@ class ProgrammableWebSpider(scrapy.Spider):
     # response_is_html ()
     #===========================================================================
     def response_is_html(self, response):
-        if ("text/html" in response.headers['Content-Type']):
-            return True
-        return False
+        return ("text/html" in response.headers['Content-Type'])
