@@ -118,14 +118,22 @@ class ProgrammableWebSpider(scrapy.Spider):
             # Avoid parsing the same url with different schema: parse only 'http://' urls so that scrapy automatically detects duplicate urls
             url = link.url.replace("https://", "http://")
             url_lower_case = url.lower()
-            if ("wsdl" in url_lower_case or "soap" in url_lower_case):
-                yield self.request_with_priority(url, self.parse_website_for_wsdl, 10)
-            elif ("webservice" in url_lower_case or "web_service" in url_lower_case or "web-service" in url_lower_case):
-                yield self.request_with_priority(url, self.parse_website_for_wsdl, 8)
-            elif ("api" in url_lower_case or "rest" in url_lower_case):
-                yield self.request_with_priority(url, self.parse_website_for_wsdl, 6)
-            else:
-                yield self.request_with_priority(url, self.parse_website_for_wsdl, 4)
+
+            priority_per_term_in_url = [
+                [10, "wsdl", "soap"],
+                [8, "webservice", "web_service", "web-service"],
+                [6, "api", "rest"],
+            ]
+            default_priority = 4
+
+            for priority_terms in priority_per_term_in_url:
+                priority = priority_terms[0]
+                terms = priority_terms[1:]
+                for term in terms:
+                    if (term in url_lower_case):
+                        yield self.request_with_priority(url, self.parse_website_for_wsdl, priority)
+                        return
+            yield self.request_with_priority(url, self.parse_website_for_wsdl, default_priority)
 
     #===========================================================================
     # request_with_priority ()
