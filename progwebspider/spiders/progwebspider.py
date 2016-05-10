@@ -29,6 +29,7 @@ class ProgrammableWebSpider(scrapy.Spider):
     download_delay = 2
     domain_max_visits = 100
     domain_visits = defaultdict(lambda: 0)
+    blocked_domains = set()
 
     #===========================================================================
     # parse ()
@@ -107,6 +108,7 @@ class ProgrammableWebSpider(scrapy.Spider):
 
         # If we reached the max number of visits for this domain, return
         if (self.domain_visits[domain] >= self.domain_max_visits):
+            self.blocked_domains.add(domain)
             return
 
         allowed_domains = [ "https://" + domain, "http://" + domain ]
