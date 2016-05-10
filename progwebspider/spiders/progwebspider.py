@@ -80,7 +80,7 @@ class ProgrammableWebSpider(scrapy.Spider):
         for div in response.xpath("//div[@id='tabs-content']/div[2]/div[@class='field']"):
             key = str(div.xpath("label/text()").extract()[0])
             try:
-                value = str(div.xpath("span/a/text()").extract()[0])
+                value = str(div.xpath("span/a/@href").extract()[0])
             except:
                 value = str(div.xpath("span/text()").extract()[0])
 
