@@ -61,6 +61,8 @@ class ProgrammableWebSpider(scrapy.Spider):
             yield self.request_with_priority(fullurl, self.parse_pw_api_page, 30)
 
         # Recursive call this function for next page
+        # (Note that this will increase by 1 the depth of the next directory
+        # page and all subsequently extracted links)
         next_page = self.get_next_page_url(response.url)
         yield self.request_with_priority(next_page, self.parse_pw_directory_page, 40)
 
