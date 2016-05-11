@@ -37,8 +37,6 @@ class ProgrammableWebSpider(scrapy.Spider):
     domain_max_visits = 100
     domain_visits = defaultdict(lambda: 0)
     blocked_domains = set()
-    # regex that (case-insensitively) selects lines that end in '?wsdl' + one character
-    ends_in_wsdl_plus_char = re.compile(r'(?i).*\?wsdl.$')
 
     #===========================================================================
     # parse ()
@@ -127,11 +125,8 @@ class ProgrammableWebSpider(scrapy.Spider):
             return
 
         allowed_domains = [ domain + "." + suffix ]
-        page_links = LinkExtractor(allow=(allowed_domains)).extract_links(response)
+        page_links = LinkExtractor(allow=(allowed_domains), canonicalize=False).extract_links(response)
         page_links = [ link.url for link in page_links ]
-
-        # There are cases where urls extracted contain a "=" on their end. Remove it
-        page_links = [ link[:-1] if re.match(self.ends_in_wsdl_plus_char, link) else link for link in page_links ]
 
         for link in page_links:
             # Avoid parsing the same url with different schema: parse only 'http://' urls so that scrapy automatically detects duplicate urls
