@@ -140,14 +140,19 @@ class ProgrammableWebSpider(scrapy.Spider):
             ]
             default_priority = 4
 
+            found = False
             for priority_terms in priority_per_term_in_url:
                 priority = priority_terms[0]
                 terms = priority_terms[1:]
                 for term in terms:
                     if (term in url_lower_case):
                         yield self.request_with_priority(url, self.parse_website_for_wsdl, priority)
-                        return
-            yield self.request_with_priority(url, self.parse_website_for_wsdl, default_priority)
+                        found = True
+                        break
+                if found == True:
+                    break
+            if found == False:
+                yield self.request_with_priority(url, self.parse_website_for_wsdl, default_priority)
 
     #===========================================================================
     # request_with_priority ()
