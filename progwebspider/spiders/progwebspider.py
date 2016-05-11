@@ -102,7 +102,10 @@ class ProgrammableWebSpider(scrapy.Spider):
     # parse_website_for_wsdl ()
     #===========================================================================
     def parse_website_for_wsdl(self, response):
-        domain = tldextract.extract(response.url).domain
+        url_parts = tldextract.extract(response.url)
+        subdomain = url_parts.subdomain
+        domain = url_parts.domain
+        suffix = url_parts.suffix
         self.domain_visits[domain] += 1
         logging.info("==  PARSE_WSDL " + str(response.meta['depth']) + " " + str(self.domain_visits[domain]) + " " + response.url)
 
@@ -121,7 +124,7 @@ class ProgrammableWebSpider(scrapy.Spider):
             self.blocked_domains.add(domain)
             return
 
-        allowed_domains = [ "https://" + domain, "http://" + domain ]
+        allowed_domains = [ domain + "." + suffix ]
         page_links = LinkExtractor(allow=(allowed_domains)).extract_links(response)
 
         for link in page_links:
