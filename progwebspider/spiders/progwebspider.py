@@ -13,6 +13,12 @@ from collections import defaultdict
 import tldextract
 
 #===============================================================================
+# WSDLItem
+#===============================================================================
+class WSDLItem(scrapy.Item):
+    url = scrapy.Field(serializer=str)
+
+#===============================================================================
 # ProgrammableWebSpider
 #===============================================================================
 class ProgrammableWebSpider(scrapy.Spider):
@@ -101,6 +107,9 @@ class ProgrammableWebSpider(scrapy.Spider):
 
         if (self.response_is_wsdl(response)):
             logging.info("WSDL_URL " + response.url)
+            item = WSDLItem()
+            item['url'] = response.url
+            yield item
             return
 
         if (not self.response_is_html(response)):
