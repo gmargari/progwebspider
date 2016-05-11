@@ -132,6 +132,7 @@ class ProgrammableWebSpider(scrapy.Spider):
             priority_per_term_in_url = [
                 [10, "wsdl", "soap"],
                 [8, "webservice", "web_service", "web-service"],
+                [7, "sitemap"],
                 [6, "api", "rest"],
             ]
             default_priority = 4
