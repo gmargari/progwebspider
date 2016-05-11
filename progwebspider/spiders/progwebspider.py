@@ -42,12 +42,14 @@ class ProgrammableWebSpider(scrapy.Spider):
     # parse ()
     #===========================================================================
     def parse(self, response):
+        logging.info("==  PARSE " + response.url)
         yield self.request_with_priority(response.url, self.parse_pw_directory_page, 40)
 
     #===========================================================================
     # parse_pw_directory_page ()
     #===========================================================================
     def parse_pw_directory_page(self, response):
+        logging.info("==  PARSE_DIR " + response.url)
         # If we reached the last page of results
         for div in response.xpath('//div[@class="view-empty"]/text()'):
             text = div.extract()
@@ -86,6 +88,7 @@ class ProgrammableWebSpider(scrapy.Spider):
     # parse_pw_api_page ()
     #===========================================================================
     def parse_pw_api_page(self, response):
+        logging.info("==  PARSE_API " + response.url)
         for div in response.xpath("//div[@id='tabs-content']/div[2]/div[@class='field']"):
             key = str(div.xpath("label/text()").extract()[0])
             try:
@@ -123,6 +126,7 @@ class ProgrammableWebSpider(scrapy.Spider):
 
         # If we reached the max number of visits for this domain, return
         if (self.domain_visits[domain] >= self.domain_max_visits):
+            logging.info("==   ADD TO BLOCK_DOMAINS " + domain)
             self.blocked_domains.add(domain)
             return
 
@@ -161,6 +165,7 @@ class ProgrammableWebSpider(scrapy.Spider):
     # request_with_priority ()
     #===========================================================================
     def request_with_priority(self, req_url, req_callback, req_priority):
+        logging.info("==      REQ " + str(req_priority) + " " + req_url + "  [ " + req_callback.func_name.upper() + " ]")
         return scrapy.Request(req_url, callback = req_callback, priority = req_priority)
 
     #===========================================================================
