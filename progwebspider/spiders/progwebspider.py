@@ -126,10 +126,11 @@ class ProgrammableWebSpider(scrapy.Spider):
 
         allowed_domains = [ domain + "." + suffix ]
         page_links = LinkExtractor(allow=(allowed_domains)).extract_links(response)
+        page_links = [ link.url for link in page_links ]
 
         for link in page_links:
             # Avoid parsing the same url with different schema: parse only 'http://' urls so that scrapy automatically detects duplicate urls
-            url = link.url.replace("https://", "http://")
+            url = link.replace("https://", "http://")
             url_lower_case = url.lower()
 
             priority_per_term_in_url = [
