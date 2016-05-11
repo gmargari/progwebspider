@@ -11,6 +11,7 @@ import time
 import logging
 from collections import defaultdict
 import tldextract
+import string
 
 #===============================================================================
 # WSDLItem
@@ -86,7 +87,7 @@ class ProgrammableWebSpider(scrapy.Spider):
         for div in response.xpath("//div[@id='tabs-content']/div[2]/div[@class='field']"):
             key = str(div.xpath("label/text()").extract()[0])
             try:
-                value = str(div.xpath("span/a/@href").extract()[0]).strip()
+                value = str(div.xpath("span/a/@href").extract()[0]).strip("\"" + string.whitespace)
             except:
                 value = str(div.xpath("span/text()").extract()[0])
 
