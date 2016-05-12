@@ -134,6 +134,16 @@ class ProgrammableWebWSDLExtractorSpider(scrapy.Spider):
             elif key == "API Provider":
                 yield self.request_with_priority(value, self.parse_website_for_wsdl, 16, api)
 
+        categories = ""
+        d = api['progweb_specs']
+        if "Primary Category" in d:
+            categories += d["Primary Category"]
+        if "Secondary Categories" in d:
+            if (len(categories)):
+                categories += ", "
+            categories += d["Secondary Categories"]
+        api['categories'] = categories
+
     #===========================================================================
     # parse_website_for_wsdl ()
     #===========================================================================
