@@ -1,5 +1,5 @@
 # progwebspider
-Scrapy spider to crawl ProgrammableWeb
+Scrapy spider to find WSDL service definitions starting from ProgrammableWeb API directory pages
 
 Run
 ---
@@ -7,5 +7,5 @@ Run
 pip install scrapy
 pip install tldextract
 # From project's top level directory:
-scrapy crawl ProgrammableWeb
+scrapy crawl ProgrammableWebWSDLExtractor
 ```

@@ -14,10 +14,10 @@ import tldextract
 import string
 
 #===============================================================================
-# ProgrammableWebSpider
+# ProgrammableWebWSDLExtractorSpider
 #===============================================================================
-class ProgrammableWebSpider(scrapy.Spider):
-    name = 'ProgrammableWeb'
+class ProgrammableWebWSDLExtractorSpider(scrapy.Spider):
+    name = 'ProgrammableWebWSDLExtractor'
     start_urls = [
         # NOTE: Don't forget to append "&page=0" to the url of the directory page
         # Directory of WSDL apis
@@ -117,11 +117,11 @@ class ProgrammableWebSpider(scrapy.Spider):
                 value = str(div.xpath("span/text()").extract()[0])
             api['progweb_specs'][key] = value
 
-            if ("API Endpoint" in key):
+            if key == "API Endpoint":
                 yield self.request_with_priority(value, self.parse_website_for_wsdl, 20, api)
-            elif ("API Homepage" in key):
+            elif key == "API Homepage":
                 yield self.request_with_priority(value, self.parse_website_for_wsdl, 18, api)
-            elif ("API Provider" in key):
+            elif key == "API Provider":
                 yield self.request_with_priority(value, self.parse_website_for_wsdl, 16, api)
 
     #===========================================================================
@@ -136,6 +136,7 @@ class ProgrammableWebSpider(scrapy.Spider):
         self.domain_visits[domain] += 1
         logging.info("==  PARSE_WSDL " + str(response.meta['depth']) + " " + str(self.domain_visits[domain]) + " " + response.url)
 
+        # Found a page containing valid WSDL description
         if (self.response_is_wsdl(response)):
             logging.info("WSDL_URL " + response.url)
             api['wsdl_url'] = response.url
