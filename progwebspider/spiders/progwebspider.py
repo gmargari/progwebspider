@@ -31,6 +31,8 @@ class ProgrammableWebWSDLExtractorSpider(scrapy.Spider):
     domain_max_visits = 100
     domain_visits = defaultdict(lambda: 0)
     blocked_domains = set()
+    errors_per_domain = defaultdict(lambda: 0)
+    max_domain_errors = 20  # If get more than this errors (e.g. 404) from a domain, block it
     wsdl_extracted = 0
 
     #===========================================================================
