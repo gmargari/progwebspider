@@ -14,12 +14,6 @@ import tldextract
 import string
 
 #===============================================================================
-# WSDLItem
-#===============================================================================
-class WSDLItem(scrapy.Item):
-    url = scrapy.Field(serializer=str)
-
-#===============================================================================
 # ProgrammableWebSpider
 #===============================================================================
 class ProgrammableWebSpider(scrapy.Spider):
@@ -37,6 +31,19 @@ class ProgrammableWebSpider(scrapy.Spider):
     domain_max_visits = 100
     domain_visits = defaultdict(lambda: 0)
     blocked_domains = set()
+    wsdl_extracted = 0
+
+    #===========================================================================
+    # __init__ ()
+    #===========================================================================
+    def __init__(self):
+        print "["
+
+    #===========================================================================
+    # closed ()
+    #===========================================================================
+    def closed(self, reason):
+        print "]"
 
     #===========================================================================
     # parse ()
@@ -89,24 +96,30 @@ class ProgrammableWebSpider(scrapy.Spider):
     #===========================================================================
     def parse_pw_api_page(self, response):
         logging.info("==  PARSE_API " + response.url)
+
+        api = dict()
+        api['progweb_url'] = response.url
+        api['progweb_specs'] = dict()
         for div in response.xpath("//div[@id='tabs-content']/div[2]/div[@class='field']"):
             key = str(div.xpath("label/text()").extract()[0])
             try:
                 value = str(div.xpath("span/a/@href").extract()[0]).strip("\"" + string.whitespace)
             except:
                 value = str(div.xpath("span/text()").extract()[0])
+            api['progweb_specs'][key] = value
 
             if ("API Endpoint" in key):
-                yield self.request_with_priority(value, self.parse_website_for_wsdl, 20)
+                yield self.request_with_priority(value, self.parse_website_for_wsdl, 20, api)
             elif ("API Homepage" in key):
-                yield self.request_with_priority(value, self.parse_website_for_wsdl, 18)
+                yield self.request_with_priority(value, self.parse_website_for_wsdl, 18, api)
             elif ("API Provider" in key):
-                yield self.request_with_priority(value, self.parse_website_for_wsdl, 16)
+                yield self.request_with_priority(value, self.parse_website_for_wsdl, 16, api)
 
     #===========================================================================
     # parse_website_for_wsdl ()
     #===========================================================================
     def parse_website_for_wsdl(self, response):
+        api = response.meta['api']
         url_parts = tldextract.extract(response.url)
         subdomain = url_parts.subdomain
         domain = url_parts.domain
@@ -116,9 +129,9 @@ class ProgrammableWebSpider(scrapy.Spider):
 
         if (self.response_is_wsdl(response)):
             logging.info("WSDL_URL " + response.url)
-            item = WSDLItem()
-            item['url'] = response.url
-            yield item
+            api['wsdl_url'] = response.url
+            print "%s%s" % ("," if self.wsdl_extracted > 0 else "", json.dumps(api, sort_keys=True))
+            self.wsdl_extracted += 1
             return
 
         if (not self.response_is_html(response)):
@@ -153,20 +166,23 @@ class ProgrammableWebSpider(scrapy.Spider):
                 terms = priority_terms[1:]
                 for term in terms:
                     if (term in url_lower_case):
-                        yield self.request_with_priority(url, self.parse_website_for_wsdl, priority)
+                        yield self.request_with_priority(url, self.parse_website_for_wsdl, priority, api)
                         found = True
                         break
                 if found == True:
                     break
             if found == False:
-                yield self.request_with_priority(url, self.parse_website_for_wsdl, default_priority)
+                yield self.request_with_priority(url, self.parse_website_for_wsdl, default_priority, api)
 
     #===========================================================================
     # request_with_priority ()
     #===========================================================================
-    def request_with_priority(self, req_url, req_callback, req_priority):
+    def request_with_priority(self, req_url, req_callback, req_priority, api = {}):
         logging.info("==      REQ " + str(req_priority) + " " + req_url + "  [ " + req_callback.func_name.upper() + " ]")
-        return scrapy.Request(req_url, callback = req_callback, priority = req_priority)
+        request = scrapy.Request(req_url, callback = req_callback, priority = req_priority)
+        if (api):
+            request.meta['api'] = api
+        return request
 
     #===========================================================================
     # response_is_wsdl ()
