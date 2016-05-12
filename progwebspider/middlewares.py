@@ -6,9 +6,9 @@ import logging
 # Based on: http://stackoverflow.com/a/30619887
 
 #===============================================================================
-# BlockedDomainMiddleware ()
+# AvoidBlockedDomainsMiddleware ()
 #===============================================================================
-class BlockDomainMiddleware(object):
+class AvoidBlockedDomainsMiddleware(object):
 
     #===========================================================================
     # process_request ()

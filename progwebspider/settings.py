@@ -51,7 +51,7 @@ CONCURRENT_REQUESTS=4
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
     'progwebspider.middlewares.BlockDomainOnTooManyErrosMiddleware': 5,
-    'progwebspider.middlewares.BlockDomainMiddleware': 10,
+    'progwebspider.middlewares.AvoidBlockedDomainsMiddleware': 10,
 }
 
 # Enable or disable extensions
