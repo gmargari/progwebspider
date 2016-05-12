@@ -109,12 +109,22 @@ class ProgrammableWebWSDLExtractorSpider(scrapy.Spider):
         api['logo'] = "http://www.programmableweb.com" + api['logo']
 
         api['progweb_specs'] = dict()
+        progweb_specs_field_type_link = (
+            "API Endpoint",
+            "API Forum",
+            "API Homepage",
+            "API Provider",
+        )
         for div in response.xpath("//div[@id='tabs-content']/div[2]/div[@class='field']"):
             key = str(div.xpath("label/text()").extract()[0])
-            try:
+            if (key in progweb_specs_field_type_link):
                 value = str(div.xpath("span/a/@href").extract()[0]).strip("\"" + string.whitespace)
-            except:
-                value = str(div.xpath("span/text()").extract()[0])
+            else:
+                try:
+                    links = div.xpath("span/a/text()").extract()
+                    value = ", ".join(links)
+                except:
+                    value = str(div.xpath("span/text()").extract()[0])
             api['progweb_specs'][key] = value
 
             if key == "API Endpoint":
