@@ -99,6 +99,15 @@ class ProgrammableWebSpider(scrapy.Spider):
 
         api = dict()
         api['progweb_url'] = response.url
+        keys_xpaths = {
+            'title': "//div[@class='node-header']/h1/text()",
+            'description': "//div[@class='api_description tabs-header_description']/text()",
+            'logo': "//div[@class='field-item even']/img/@src",
+        }
+        for key in keys_xpaths:
+            api[key] = response.xpath(keys_xpaths[key]).extract()[0].strip()
+        api['logo'] = "http://www.programmableweb.com" + api['logo']
+
         api['progweb_specs'] = dict()
         for div in response.xpath("//div[@id='tabs-content']/div[2]/div[@class='field']"):
             key = str(div.xpath("label/text()").extract()[0])
