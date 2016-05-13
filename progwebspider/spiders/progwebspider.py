@@ -27,11 +27,11 @@ class ProgrammableWebWSDLExtractorSpider(scrapy.Spider):
     ]
 
     # scrapy parameters
-    download_delay = 2      # seconds between successive page crawls
+    download_delay = 5      # seconds between successive page crawls
     download_timeout = 30   # seconds before aborting page download (default: 180)
 
     blocked_domains = set()
-    domain_max_visits = 100  # block a domain if we have visited it too many times
+    domain_max_visits = 30  # block a domain if we have visited it too many times
     domain_visits = defaultdict(lambda: 0)
     max_domain_errors = 20  # if get more than this errors (e.g. 404) from a domain, block it
     errors_per_domain = defaultdict(lambda: 0)
