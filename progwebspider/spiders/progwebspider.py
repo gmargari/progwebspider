@@ -129,13 +129,6 @@ class ProgrammableWebWSDLExtractorSpider(scrapy.Spider):
                     value = str(div.xpath("span/text()").extract()[0])
             api['progweb_specs'][key] = value
 
-            if key == "API Endpoint":
-                yield self.request_with_priority(value, self.parse_website_for_wsdl, 20, api)
-            elif key == "API Homepage":
-                yield self.request_with_priority(value, self.parse_website_for_wsdl, 18, api)
-            elif key == "API Provider":
-                yield self.request_with_priority(value, self.parse_website_for_wsdl, 16, api)
-
         categories = ""
         d = api['progweb_specs']
         if "Primary Category" in d:
@@ -145,6 +138,15 @@ class ProgrammableWebWSDLExtractorSpider(scrapy.Spider):
                 categories += ", "
             categories += d["Secondary Categories"]
         api['categories'] = categories
+
+        for key in api['progweb_specs']:
+            value = api['progweb_specs'][key]
+            if key == "API Endpoint":
+                yield self.request_with_priority(value, self.parse_website_for_wsdl, 20, api)
+            elif key == "API Homepage":
+                yield self.request_with_priority(value, self.parse_website_for_wsdl, 18, api)
+            elif key == "API Provider":
+                yield self.request_with_priority(value, self.parse_website_for_wsdl, 16, api)
 
     #===========================================================================
     # parse_website_for_wsdl ()
