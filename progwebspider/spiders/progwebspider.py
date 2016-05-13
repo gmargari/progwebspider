@@ -119,15 +119,18 @@ class ProgrammableWebWSDLExtractorSpider(scrapy.Spider):
         )
         for div in response.xpath("//div[@id='tabs-content']/div[2]/div[@class='field']"):
             key = str(div.xpath("label/text()").extract()[0])
-            if (key in progweb_specs_field_type_link):
-                value = str(div.xpath("span/a/@href").extract()[0]).strip("\"" + string.whitespace)
-            else:
-                try:
+            try:
+                if (key in progweb_specs_field_type_link):
+                    value = str(div.xpath("span/a/@href").extract()[0]).strip("\"" + string.whitespace)
+                else:
                     links = div.xpath("span/a/text()").extract()
-                    value = ", ".join(links)
-                except:
-                    value = str(div.xpath("span/text()").extract()[0])
-            api['progweb_specs'][key] = value
+                    if (len(links)):
+                        value = ", ".join(links)
+                    else:
+                        value = str(div.xpath("span/text()").extract()[0])
+                api['progweb_specs'][key] = value
+            except:
+                pass
 
         categories = ""
         d = api['progweb_specs']
