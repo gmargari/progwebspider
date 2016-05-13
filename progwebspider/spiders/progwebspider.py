@@ -26,13 +26,14 @@ class ProgrammableWebWSDLExtractorSpider(scrapy.Spider):
         'http://www.programmableweb.com/category/all/apis?data_format=21176&page=0',
     ]
 
-    # scrapy parameter: seconds between successive page crawls
-    download_delay = 2
-    domain_max_visits = 100
-    domain_visits = defaultdict(lambda: 0)
+    # scrapy parameters
+    download_delay = 2      # seconds between successive page crawls
+
     blocked_domains = set()
+    domain_max_visits = 100  # block a domain if we have visited it too many times
+    domain_visits = defaultdict(lambda: 0)
+    max_domain_errors = 20  # if get more than this errors (e.g. 404) from a domain, block it
     errors_per_domain = defaultdict(lambda: 0)
-    max_domain_errors = 20  # If get more than this errors (e.g. 404) from a domain, block it
     wsdl_extracted = 0
 
     #===========================================================================
