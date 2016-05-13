@@ -169,6 +169,7 @@ class ProgrammableWebWSDLExtractorSpider(scrapy.Spider):
             logging.info("WSDL_URL " + response.url)
             api['wsdl_url'] = response.url
             print "%s%s" % ("," if self.wsdl_extracted > 0 else "", json.dumps(api, sort_keys=True))
+            sys.stdout.flush()
             self.wsdl_extracted += 1
             return
 
