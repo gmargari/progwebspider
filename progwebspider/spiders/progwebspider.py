@@ -21,9 +21,9 @@ class ProgrammableWebWSDLExtractorSpider(scrapy.Spider):
     start_urls = [
         # NOTE: Don't forget to append "&page=0" to the url of the directory page
         # Directory of WSDL apis
-        #'http://www.programmableweb.com/category/all/apis?data_format=21183&page=0',
+        #'http://www.programmableweb.com/category/all/apis?keyword=WSDL&deadpool=1&page=0',
         # Directory of SOAP apis
-        'http://www.programmableweb.com/category/all/apis?data_format=21176&page=0',
+        'http://www.programmableweb.com/category/all/apis?keyword=SOAP&deadpool=1&page=0',
     ]
 
     # scrapy parameters
